@@ -1,2 +1,1 @@
-loadstring(game:HttpGet("http://redyn.my/Red/Loader/acaf7b5c19.lua"))()
 loadstring(game:HttpGet("https://pastebin.com/raw/68fVf4vz"))()
