@@ -1,0 +1,254 @@
+-- SERVICES
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+
+-------------------------------------------------
+-- VARIABLES
+-------------------------------------------------
+local clones = {}
+local cloneCount = 5
+local currentTool
+
+-------------------------------------------------
+-- UI SETUP (BRAINROT THEME)
+-------------------------------------------------
+local gui = Instance.new("ScreenGui")
+gui.Name = "BrainrotUI"
+gui.ResetOnSpawn = false
+gui.Parent = player:WaitForChild("PlayerGui")
+
+local frame = Instance.new("Frame")
+frame.Size = UDim2.fromScale(0.25, 0.22)
+frame.Position = UDim2.fromScale(0.38, 0.38)
+frame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+frame.Parent = gui
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 18)
+
+local stroke = Instance.new("UIStroke", frame)
+stroke.Thickness = 3
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.fromScale(1, 0.25)
+title.BackgroundTransparency = 1
+title.Text = "🧠 ESCAPE TSUNAMI 🧠"
+title.Font = Enum.Font.GothamBlack
+title.TextScaled = true
+title.TextColor3 = Color3.fromRGB(255, 80, 220)
+title.Parent = frame
+
+local counter = Instance.new("TextLabel")
+counter.Size = UDim2.fromScale(0.3, 0.18)
+counter.Position = UDim2.fromScale(0.35, 0.3)
+counter.BackgroundTransparency = 1
+counter.Font = Enum.Font.GothamBold
+counter.TextScaled = true
+counter.TextColor3 = Color3.fromRGB(0, 255, 255)
+counter.Text = "x5"
+counter.Parent = frame
+
+local function makeButton(text, pos, size)
+	local b = Instance.new("TextButton")
+	b.Size = size
+	b.Position = pos
+	b.Text = text
+	b.Font = Enum.Font.GothamBlack
+	b.TextScaled = true
+	b.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+	b.TextColor3 = Color3.new(1,1,1)
+	b.Parent = frame
+	Instance.new("UICorner", b).CornerRadius = UDim.new(0, 14)
+	local s = Instance.new("UIStroke", b)
+	s.Thickness = 2
+	s.Color = Color3.fromRGB(0, 255, 255)
+	return b
+end
+
+local minus = makeButton("-", UDim2.fromScale(0.05, 0.3), UDim2.fromScale(0.25, 0.18))
+local plus  = makeButton("+", UDim2.fromScale(0.7, 0.3), UDim2.fromScale(0.25, 0.18))
+
+local dupButton = makeButton(
+	"🔥 DUPLICATE 🔥",
+	UDim2.fromScale(0.05, 0.55),
+	UDim2.fromScale(0.9, 0.3)
+)
+dupButton.BackgroundColor3 = Color3.fromRGB(255, 40, 120)
+
+-------------------------------------------------
+-- DRAGGABLE UI
+-------------------------------------------------
+local dragging, dragStart, startPos
+
+frame.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		dragging = true
+		dragStart = input.Position
+		startPos = frame.Position
+	end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+	if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+		local delta = input.Position - dragStart
+		frame.Position = UDim2.new(
+			startPos.X.Scale,
+			startPos.X.Offset + delta.X,
+			startPos.Y.Scale,
+			startPos.Y.Offset + delta.Y
+		)
+	end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		dragging = false
+	end
+end)
+
+-------------------------------------------------
+-- RGB / WOBBLE
+-------------------------------------------------
+local hue = 0
+RunService.RenderStepped:Connect(function(dt)
+	hue = (hue + dt * 0.4) % 1
+	stroke.Color = Color3.fromHSV(hue, 1, 1)
+	title.Rotation = math.sin(tick() * 3) * 2
+end)
+
+-------------------------------------------------
+-- ESCAPE TSUNAMI TEXT
+-------------------------------------------------
+local phrases = {
+	"ESCAPE THE TSUNAMI 🌊",
+	"RUN 💀",
+	"BRAINROT OVERLOAD 🧠",
+	"NO TIME 😭",
+	"GO GO GO",
+	"TSUNAMI BEHIND YOU"
+}
+
+local function spawnBrainrotText()
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.fromScale(0.6, 0.15)
+	label.Position = UDim2.fromScale(0.2, 0.4)
+	label.BackgroundTransparency = 1
+	label.TextScaled = true
+	label.Font = Enum.Font.GothamBlack
+	label.Text = phrases[math.random(#phrases)]
+	label.TextColor3 = Color3.fromHSV(math.random(),1,1)
+	label.TextStrokeTransparency = 0
+	label.Parent = gui
+
+	label.TextTransparency = 1
+	TweenService:Create(
+		label,
+		TweenInfo.new(0.15, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
+		{TextTransparency = 0}
+	):Play()
+
+	local shake
+	shake = RunService.RenderStepped:Connect(function()
+		label.Position = UDim2.fromScale(
+			0.2 + math.random(-3,3)/500,
+			0.4 + math.random(-3,3)/500
+		)
+	end)
+
+	task.delay(0.9, function()
+		shake:Disconnect()
+		TweenService:Create(label, TweenInfo.new(0.25), {TextTransparency = 1}):Play()
+		task.wait(0.3)
+		label:Destroy()
+	end)
+end
+
+-------------------------------------------------
+-- CLONE LOGIC (PERMANENT IN BACKPACK)
+-------------------------------------------------
+local function createClones(tool)
+	if not tool then return end
+
+	local handle = tool:FindFirstChild("Handle")
+	if not handle then return end
+
+	for i = 1, cloneCount do
+		local clone = tool:Clone()
+
+		for _, obj in ipairs(clone:GetDescendants()) do
+			if obj:IsA("Script") or obj:IsA("LocalScript") then
+				obj:Destroy()
+			end
+		end
+
+		-- PARENT TO BACKPACK SO IT NEVER DISAPPEARS
+		clone.Parent = player.Backpack
+
+		local h = clone:FindFirstChild("Handle")
+		if h then
+			h.CanCollide = false
+			local weld = Instance.new("WeldConstraint")
+			weld.Part0 = handle
+			weld.Part1 = h
+			weld.Parent = h
+
+			-- Spread visually
+			h.CFrame = handle.CFrame * CFrame.new(0.35 * (#clones + 1), 0, 0)
+		end
+
+		table.insert(clones, clone)
+	end
+end
+
+-------------------------------------------------
+-- TOOL DETECTION (TRACK CURRENT TOOL)
+-------------------------------------------------
+character.ChildAdded:Connect(function(child)
+	if child:IsA("Tool") then
+		currentTool = child
+	end
+end)
+
+-- REMOVE ChildRemoved logic completely (so clones never disappear)
+
+-------------------------------------------------
+-- UI LOGIC
+-------------------------------------------------
+local function updateUI()
+	counter.Text = "x" .. cloneCount
+end
+
+minus.MouseButton1Click:Connect(function()
+	cloneCount = math.max(1, cloneCount - 1)
+	updateUI()
+end)
+
+plus.MouseButton1Click:Connect(function()
+	cloneCount = math.min(25, cloneCount + 1)
+	updateUI()
+end)
+
+dupButton.MouseButton1Click:Connect(function()
+	if currentTool then
+		createClones(currentTool)
+		spawnBrainrotText()
+
+		TweenService:Create(
+			dupButton,
+			TweenInfo.new(0.1, Enum.EasingStyle.Back),
+			{Size = UDim2.fromScale(0.95, 0.32)}
+		):Play()
+		task.delay(0.1, function()
+			TweenService:Create(
+				dupButton,
+				TweenInfo.new(0.1),
+				{Size = UDim2.fromScale(0.9, 0.3)}
+			):Play()
+		end)
+	end
+end)
+
+updateUI()
