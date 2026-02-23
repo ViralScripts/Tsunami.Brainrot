@@ -1,0 +1,184 @@
+--// Services
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local StarterGui = game:GetService("StarterGui")
+
+local player = Players.LocalPlayer
+
+--// ScreenGui
+local gui = Instance.new("ScreenGui")
+gui.Name = "ViralHubUI"
+gui.ResetOnSpawn = false
+gui.Parent = player:WaitForChild("PlayerGui")
+
+--// Main Frame
+local main = Instance.new("Frame")
+main.Size = UDim2.new(0, 260, 0, 180)
+main.Position = UDim2.new(0.5, -130, 0.5, -90)
+main.BackgroundColor3 = Color3.fromRGB(30,30,30)
+main.BorderSizePixel = 0
+main.Parent = gui
+Instance.new("UICorner", main).CornerRadius = UDim.new(0, 8)
+
+--// Search Box
+local searchBox = Instance.new("TextBox")
+searchBox.Size = UDim2.new(0.9, 0, 0, 22)
+searchBox.Position = UDim2.new(0.05, 0, 0, 6)
+searchBox.PlaceholderText = "Type Victim Username"
+searchBox.Text = ""
+searchBox.BackgroundColor3 = Color3.fromRGB(45,45,45)
+searchBox.TextColor3 = Color3.new(1,1,1)
+searchBox.Font = Enum.Font.Gotham
+searchBox.TextScaled = true
+searchBox.Parent = main
+Instance.new("UICorner", searchBox)
+
+--// Avatar
+local avatar = Instance.new("ImageLabel")
+avatar.Size = UDim2.new(0, 55, 0, 55)
+avatar.Position = UDim2.new(0.5, -27, 0, 30)
+avatar.BackgroundColor3 = Color3.fromRGB(45,45,45)
+avatar.Image = ""
+avatar.Parent = main
+Instance.new("UICorner", avatar)
+
+--// Player Name (HIDDEN at start)
+local playerName = Instance.new("TextLabel")
+playerName.Size = UDim2.new(1, 0, 0, 16)
+playerName.Position = UDim2.new(0, 0, 0, 85)
+playerName.BackgroundTransparency = 1
+playerName.TextColor3 = Color3.new(1,1,1)
+playerName.TextScaled = true
+playerName.Font = Enum.Font.GothamBold
+playerName.Text = ""
+playerName.Visible = false
+playerName.Parent = main
+
+--// Button Creator
+local function createButton(text, posY)
+	local button = Instance.new("TextButton")
+	button.Size = UDim2.new(0.85, 0, 0, 26)
+	button.Position = UDim2.new(0.075, 0, 0, posY)
+	button.Text = text
+	button.BackgroundColor3 = Color3.fromRGB(60,60,60)
+	button.TextColor3 = Color3.new(1,1,1)
+	button.Font = Enum.Font.GothamBold
+	button.TextScaled = true
+	button.AutoButtonColor = false
+	button.Parent = main
+	Instance.new("UICorner", button)
+
+	button.MouseButton1Down:Connect(function()
+		button.BackgroundColor3 = Color3.fromRGB(0,170,255)
+	end)
+
+	button.MouseButton1Up:Connect(function()
+		button.BackgroundColor3 = Color3.fromRGB(60,60,60)
+	end)
+
+	button.MouseLeave:Connect(function()
+		button.BackgroundColor3 = Color3.fromRGB(60,60,60)
+	end)
+
+	return button
+end
+
+local freezeBtn = createButton("Freeze Trade", 105)
+local forceBtn = createButton("Force Accept", 132)
+
+--// Credit
+local credit = Instance.new("TextLabel")
+credit.Size = UDim2.new(1, 0, 0, 15)
+credit.Position = UDim2.new(0, 0, 0, 160)
+credit.BackgroundTransparency = 1
+credit.Text = "Made By Viral Hub Scripts"
+credit.TextColor3 = Color3.fromRGB(150,150,150)
+credit.TextScaled = true
+credit.Font = Enum.Font.Gotham
+credit.Parent = main
+
+--// Notification (5x)
+local function notify(text)
+	for i = 1, 5 do
+		pcall(function()
+			StarterGui:SetCore("SendNotification", {
+				Title = "Trade Notification";
+				Text = text;
+				Duration = 3;
+			})
+		end)
+		task.wait(0.15)
+	end
+end
+
+freezeBtn.MouseButton1Click:Connect(function()
+	notify("Trade Frozen Successfully❄️")
+end)
+
+forceBtn.MouseButton1Click:Connect(function()
+	notify("Force Accepted Successfully✅")
+end)
+
+--// Player Search
+local function updatePlayer(searchText)
+	if searchText == "" then
+		avatar.Image = ""
+		playerName.Visible = false
+		return
+	end
+
+	for _, plr in pairs(Players:GetPlayers()) do
+		if string.find(string.lower(plr.Name), string.lower(searchText)) then
+			local content = Players:GetUserThumbnailAsync(
+				plr.UserId,
+				Enum.ThumbnailType.HeadShot,
+				Enum.ThumbnailSize.Size100x100
+			)
+			avatar.Image = content
+			playerName.Text = plr.Name
+			playerName.Visible = true
+			return
+		end
+	end
+
+	avatar.Image = ""
+	playerName.Visible = false
+end
+
+searchBox:GetPropertyChangedSignal("Text"):Connect(function()
+	updatePlayer(searchBox.Text)
+end)
+
+--// Draggable
+local dragging, dragInput, dragStart, startPos
+
+main.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		dragging = true
+		dragStart = input.Position
+		startPos = main.Position
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragging = false
+			end
+		end)
+	end
+end)
+
+main.InputChanged:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseMovement then
+		dragInput = input
+	end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+	if input == dragInput and dragging then
+		local delta = input.Position - dragStart
+		main.Position = UDim2.new(
+			startPos.X.Scale,
+			startPos.X.Offset + delta.X,
+			startPos.Y.Scale,
+			startPos.Y.Offset + delta.Y
+		)
+	end
+end)
