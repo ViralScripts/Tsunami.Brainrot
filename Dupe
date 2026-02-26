@@ -1,254 +1,177 @@
--- SERVICES
+-- 😈 CHAOTIC BRAINROT DUPLICATOR 😈
+
 local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 
 local player = Players.LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
 
--------------------------------------------------
--- VARIABLES
--------------------------------------------------
-local clones = {}
-local cloneCount = 5
-local currentTool
+-- CONFIG
+local duplicateCount = 10
+local MIN_COUNT = 1
+local MAX_COUNT = 100
 
--------------------------------------------------
--- UI SETUP (BRAINROT THEME)
--------------------------------------------------
+-- GUI
 local gui = Instance.new("ScreenGui")
-gui.Name = "BrainrotUI"
+gui.Name = "BrainrotChaosGui"
 gui.ResetOnSpawn = false
 gui.Parent = player:WaitForChild("PlayerGui")
 
+-- MAIN FRAME
 local frame = Instance.new("Frame")
-frame.Size = UDim2.fromScale(0.25, 0.22)
-frame.Position = UDim2.fromScale(0.38, 0.38)
-frame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+frame.Size = UDim2.new(0, 260, 0, 140) -- increased height to fit credit
+frame.Position = UDim2.new(0.05, 0, 0.5, -80)
+frame.BackgroundColor3 = Color3.fromRGB(120, 0, 200)
+frame.BorderSizePixel = 0
+frame.Active = true
+frame.Draggable = true
 frame.Parent = gui
+
 Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 18)
 
-local stroke = Instance.new("UIStroke", frame)
-stroke.Thickness = 3
+-- STROKE GLOW
+local stroke = Instance.new("UIStroke")
+stroke.Thickness = 2
+stroke.Transparency = 0.25
+stroke.Parent = frame
 
+-- 🌈 ANIMATED GRADIENT
+local gradient = Instance.new("UIGradient")
+gradient.Color = ColorSequence.new{
+	ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)),
+	ColorSequenceKeypoint.new(0.2, Color3.fromRGB(255, 0, 255)),
+	ColorSequenceKeypoint.new(0.4, Color3.fromRGB(0, 0, 255)),
+	ColorSequenceKeypoint.new(0.6, Color3.fromRGB(0, 255, 255)),
+	ColorSequenceKeypoint.new(0.8, Color3.fromRGB(0, 255, 0)),
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 0))
+}
+gradient.Parent = frame
+
+-- Animate gradient
+local rot = 0
+RunService.RenderStepped:Connect(function(dt)
+	rot += dt * 40
+	gradient.Rotation = rot
+	stroke.Color = Color3.fromHSV((tick() % 5) / 5, 1, 1)
+end)
+
+-- TITLE
 local title = Instance.new("TextLabel")
-title.Size = UDim2.fromScale(1, 0.25)
+title.Size = UDim2.new(1, -10, 0, 32)
+title.Position = UDim2.new(0, 5, 0, 6)
 title.BackgroundTransparency = 1
-title.Text = "🧠 ESCAPE TSUNAMI 🧠"
+title.Text = "😈 BRAINROT DUPLICATOR"
 title.Font = Enum.Font.GothamBlack
-title.TextScaled = true
-title.TextColor3 = Color3.fromRGB(255, 80, 220)
+title.TextSize = 20
+title.TextColor3 = Color3.new(1,1,1)
 title.Parent = frame
 
-local counter = Instance.new("TextLabel")
-counter.Size = UDim2.fromScale(0.3, 0.18)
-counter.Position = UDim2.fromScale(0.35, 0.3)
-counter.BackgroundTransparency = 1
-counter.Font = Enum.Font.GothamBold
-counter.TextScaled = true
-counter.TextColor3 = Color3.fromRGB(0, 255, 255)
-counter.Text = "x5"
-counter.Parent = frame
+-- COUNT LABEL
+local countLabel = Instance.new("TextLabel")
+countLabel.Size = UDim2.new(0.4, 0, 0, 26)
+countLabel.Position = UDim2.new(0.3, 0, 0, 44)
+countLabel.BackgroundTransparency = 1
+countLabel.Text = "x" .. duplicateCount
+countLabel.Font = Enum.Font.GothamBold
+countLabel.TextSize = 18
+countLabel.TextColor3 = Color3.fromRGB(255,255,255)
+countLabel.Parent = frame
 
-local function makeButton(text, pos, size)
-	local b = Instance.new("TextButton")
-	b.Size = size
-	b.Position = pos
-	b.Text = text
-	b.Font = Enum.Font.GothamBlack
-	b.TextScaled = true
-	b.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
-	b.TextColor3 = Color3.new(1,1,1)
-	b.Parent = frame
-	Instance.new("UICorner", b).CornerRadius = UDim.new(0, 14)
-	local s = Instance.new("UIStroke", b)
-	s.Thickness = 2
-	s.Color = Color3.fromRGB(0, 255, 255)
-	return b
-end
+-- MINUS BUTTON
+local minus = Instance.new("TextButton")
+minus.Size = UDim2.new(0, 30, 0, 26)
+minus.Position = UDim2.new(0.30, 0, 0, 44)
+minus.Text = "−"
+minus.Font = Enum.Font.GothamBlack
+minus.TextSize = 20
+minus.BackgroundColor3 = Color3.fromRGB(255, 80, 80)
+minus.Parent = frame
+Instance.new("UICorner", minus).CornerRadius = UDim.new(1, 0)
 
-local minus = makeButton("-", UDim2.fromScale(0.05, 0.3), UDim2.fromScale(0.25, 0.18))
-local plus  = makeButton("+", UDim2.fromScale(0.7, 0.3), UDim2.fromScale(0.25, 0.18))
+-- PLUS BUTTON
+local plus = Instance.new("TextButton")
+plus.Size = UDim2.new(0, 30, 0, 26)
+plus.Position = UDim2.new(0.60, 0, 0, 44)
+plus.Text = "+"
+plus.Font = Enum.Font.GothamBlack
+plus.TextSize = 20
+plus.BackgroundColor3 = Color3.fromRGB(80, 255, 120)
+plus.Parent = frame
+Instance.new("UICorner", plus).CornerRadius = UDim.new(1, 0)
 
-local dupButton = makeButton(
-	"🔥 DUPLICATE 🔥",
-	UDim2.fromScale(0.05, 0.55),
-	UDim2.fromScale(0.9, 0.3)
-)
-dupButton.BackgroundColor3 = Color3.fromRGB(255, 40, 120)
-
--------------------------------------------------
--- DRAGGABLE UI
--------------------------------------------------
-local dragging, dragStart, startPos
-
-frame.InputBegan:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 then
-		dragging = true
-		dragStart = input.Position
-		startPos = frame.Position
-	end
-end)
-
-UserInputService.InputChanged:Connect(function(input)
-	if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-		local delta = input.Position - dragStart
-		frame.Position = UDim2.new(
-			startPos.X.Scale,
-			startPos.X.Offset + delta.X,
-			startPos.Y.Scale,
-			startPos.Y.Offset + delta.Y
-		)
-	end
-end)
-
-UserInputService.InputEnded:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 then
-		dragging = false
-	end
-end)
-
--------------------------------------------------
--- RGB / WOBBLE
--------------------------------------------------
-local hue = 0
-RunService.RenderStepped:Connect(function(dt)
-	hue = (hue + dt * 0.4) % 1
-	stroke.Color = Color3.fromHSV(hue, 1, 1)
-	title.Rotation = math.sin(tick() * 3) * 2
-end)
-
--------------------------------------------------
--- ESCAPE TSUNAMI TEXT
--------------------------------------------------
-local phrases = {
-	"ESCAPE THE TSUNAMI 🌊",
-	"RUN 💀",
-	"BRAINROT OVERLOAD 🧠",
-	"NO TIME 😭",
-	"GO GO GO",
-	"TSUNAMI BEHIND YOU"
-}
-
-local function spawnBrainrotText()
-	local label = Instance.new("TextLabel")
-	label.Size = UDim2.fromScale(0.6, 0.15)
-	label.Position = UDim2.fromScale(0.2, 0.4)
-	label.BackgroundTransparency = 1
-	label.TextScaled = true
-	label.Font = Enum.Font.GothamBlack
-	label.Text = phrases[math.random(#phrases)]
-	label.TextColor3 = Color3.fromHSV(math.random(),1,1)
-	label.TextStrokeTransparency = 0
-	label.Parent = gui
-
-	label.TextTransparency = 1
-	TweenService:Create(
-		label,
-		TweenInfo.new(0.15, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
-		{TextTransparency = 0}
-	):Play()
-
-	local shake
-	shake = RunService.RenderStepped:Connect(function()
-		label.Position = UDim2.fromScale(
-			0.2 + math.random(-3,3)/500,
-			0.4 + math.random(-3,3)/500
-		)
-	end)
-
-	task.delay(0.9, function()
-		shake:Disconnect()
-		TweenService:Create(label, TweenInfo.new(0.25), {TextTransparency = 1}):Play()
-		task.wait(0.3)
-		label:Destroy()
-	end)
-end
-
--------------------------------------------------
--- CLONE LOGIC (PERMANENT IN BACKPACK)
--------------------------------------------------
-local function createClones(tool)
-	if not tool then return end
-
-	local handle = tool:FindFirstChild("Handle")
-	if not handle then return end
-
-	for i = 1, cloneCount do
-		local clone = tool:Clone()
-
-		for _, obj in ipairs(clone:GetDescendants()) do
-			if obj:IsA("Script") or obj:IsA("LocalScript") then
-				obj:Destroy()
-			end
-		end
-
-		-- PARENT TO BACKPACK SO IT NEVER DISAPPEARS
-		clone.Parent = player.Backpack
-
-		local h = clone:FindFirstChild("Handle")
-		if h then
-			h.CanCollide = false
-			local weld = Instance.new("WeldConstraint")
-			weld.Part0 = handle
-			weld.Part1 = h
-			weld.Parent = h
-
-			-- Spread visually
-			h.CFrame = handle.CFrame * CFrame.new(0.35 * (#clones + 1), 0, 0)
-		end
-
-		table.insert(clones, clone)
-	end
-end
-
--------------------------------------------------
--- TOOL DETECTION (TRACK CURRENT TOOL)
--------------------------------------------------
-character.ChildAdded:Connect(function(child)
-	if child:IsA("Tool") then
-		currentTool = child
-	end
-end)
-
--- REMOVE ChildRemoved logic completely (so clones never disappear)
-
--------------------------------------------------
--- UI LOGIC
--------------------------------------------------
-local function updateUI()
-	counter.Text = "x" .. cloneCount
+-- UPDATE COUNT
+local function updateCount()
+	countLabel.Text = "x" .. duplicateCount
 end
 
 minus.MouseButton1Click:Connect(function()
-	cloneCount = math.max(1, cloneCount - 1)
-	updateUI()
+	duplicateCount = math.max(MIN_COUNT, duplicateCount - 1)
+	updateCount()
 end)
 
 plus.MouseButton1Click:Connect(function()
-	cloneCount = math.min(25, cloneCount + 1)
-	updateUI()
+	duplicateCount = math.min(MAX_COUNT, duplicateCount + 1)
+	updateCount()
 end)
 
-dupButton.MouseButton1Click:Connect(function()
-	if currentTool then
-		createClones(currentTool)
-		spawnBrainrotText()
+-- DUPLICATE BUTTON
+local button = Instance.new("TextButton")
+button.Size = UDim2.new(0.9, 0, 0, 30)
+button.Position = UDim2.new(0.05, 0, 0, 80)
+button.Text = "💥 DUPLICATE HELD BRAINROT💥"
+button.Font = Enum.Font.GothamBlack
+button.TextSize = 16
+button.TextColor3 = Color3.fromRGB(20,20,20)
+button.BackgroundColor3 = Color3.fromRGB(255, 180, 0)
+button.Parent = frame
+Instance.new("UICorner", button).CornerRadius = UDim.new(0, 14)
 
-		TweenService:Create(
-			dupButton,
-			TweenInfo.new(0.1, Enum.EasingStyle.Back),
-			{Size = UDim2.fromScale(0.95, 0.32)}
-		):Play()
-		task.delay(0.1, function()
-			TweenService:Create(
-				dupButton,
-				TweenInfo.new(0.1),
-				{Size = UDim2.fromScale(0.9, 0.3)}
-			):Play()
-		end)
+-- CREDIT LABEL (VISIBLE BELOW DUPLICATE BUTTON)
+local credit = Instance.new("TextLabel")
+credit.Size = UDim2.new(1, -10, 0, 18)
+credit.Position = UDim2.new(0, 5, 0, 120) -- below button rectangle
+credit.BackgroundTransparency = 1
+credit.Text = "Made by Viral Hub Scripts"
+credit.Font = Enum.Font.Gotham
+credit.TextSize = 14
+credit.TextColor3 = Color3.fromRGB(255, 255, 255)
+credit.TextStrokeTransparency = 0.5
+credit.TextXAlignment = Enum.TextXAlignment.Center
+credit.Parent = frame
+
+-- TOOL CHECK
+local function getHeldTool()
+	local char = player.Character
+	if not char then return end
+	for _, v in ipairs(char:GetChildren()) do
+		if v:IsA("Tool") then
+			return v
+		end
 	end
+end
+
+-- 😈 CHAOS CLICK
+button.MouseButton1Click:Connect(function()
+	local tool = getHeldTool()
+	if not tool then return end
+
+	for i = 1, duplicateCount do
+		tool:Clone().Parent = player.Backpack
+	end
+
+	-- CHAOS EFFECT
+	TweenService:Create(frame, TweenInfo.new(0.1), {
+		Rotation = math.random(-3,3)
+	}):Play()
+
+	task.delay(0.1, function()
+		frame.Rotation = 0
+	end)
+
+	button.Text = "🔥 DONE 🔥"
+	task.delay(0.25, function()
+		button.Text = "💥 DUPLICATE 💥"
+	end)
 end)
 
-updateUI()
+print("😈🌈 CHAOTIC BRAINROT MODE LOADED")
