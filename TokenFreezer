@@ -1,5 +1,5 @@
 -- SETTINGS
-local CUSTOM_NUMBER = "3035"
+local CUSTOM_NUMBER = "3,035"
 
 -- Services
 local Players = game:GetService("Players")
